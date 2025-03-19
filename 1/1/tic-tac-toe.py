@@ -16,7 +16,7 @@ def encode_features(x):
                 x_encoded[i, j] = 0
     return x_encoded
 
-file_path = 'C:/Users/Windows/Desktop/1 лаба/tic_tac_toe.txt'
+file_path = 'tic_tac_toe.txt'
 x, y = load_data(file_path)
 
 x_encoded = encode_features(x)
@@ -26,4 +26,4 @@ y_encoded = label_encoder.fit_transform(y)
 
 selection, precision = do_variability_datasets(x_encoded, y_encoded, 958)
 
-create_plot(selection, precision)
+create_plot(selection, precision, 'Зависимость точности модели от размера обучающей выборки', 'Выборка', 'Точность модели')

@@ -35,11 +35,11 @@ def do_variability_datasets(x, y, rows_num):
         print(f'Точность модели: {accuracy * 100:.2f}%')
     return selection, precision
 
-def create_plot(selection, precision):
+def create_plot(x, y, title, x_lable, y_label):
     plt.figure(figsize=(10, 6))
-    plt.plot(selection, precision, marker='o', linestyle='-', color='b')
-    plt.title('Зависимость точности модели от размера обучающей выборки')
-    plt.xlabel('Выборка')
-    plt.ylabel('Точность модели')
+    plt.plot(x, y, marker='o', linestyle='-', color='b')
+    plt.title(title)
+    plt.xlabel(x_lable)
+    plt.ylabel(y_label)
     plt.grid(True)
     plt.show()
