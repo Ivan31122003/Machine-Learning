@@ -10,21 +10,19 @@ from sklearn.metrics import roc_curve, auc, precision_recall_curve, average_prec
 class_1_x1_mean = 24
 class_1_x2_mean = 16
 class_1_variance = 3
-class_1_std_dev = np.sqrt(class_1_variance)
 
 class_2_x1_mean = 11
 class_2_x2_mean = 6
 class_2_variance = 2
-class_2_std_dev = np.sqrt(class_2_variance)
 
 class_1_num_points = 60
 class_2_num_points = 40
 
-class_1_x1_points = np.random.normal(class_1_x1_mean, class_1_std_dev, class_1_num_points)
-class_1_x2_points = np.random.normal(class_1_x2_mean, class_1_std_dev, class_1_num_points)
+class_1_x1_points = np.random.normal(class_1_x1_mean, class_1_variance, class_1_num_points)
+class_1_x2_points = np.random.normal(class_1_x2_mean, class_1_variance, class_1_num_points)
 
-class_2_x1_points = np.random.normal(class_2_x1_mean, class_2_std_dev, class_2_num_points)
-class_2_x2_points = np.random.normal(class_2_x2_mean, class_2_std_dev, class_2_num_points)
+class_2_x1_points = np.random.normal(class_2_x1_mean, class_2_variance, class_2_num_points)
+class_2_x2_points = np.random.normal(class_2_x2_mean, class_2_variance, class_2_num_points)
 
 # Построение графика с точками 2-х классов
 plt.scatter(class_1_x1_points, class_1_x2_points, color='blue', label='Точки класса -1')
@@ -32,7 +30,7 @@ plt.scatter(class_2_x1_points, class_2_x2_points, color='red', label='Точки
 
 plt.xlabel('Ось X1')
 plt.ylabel('Ось X2')
-plt.title('График с точками двух цветов')
+plt.title('График с точками двух классов')
 plt.legend()
 
 plt.show()
