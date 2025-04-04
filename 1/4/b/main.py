@@ -60,6 +60,7 @@ for C in C_values:
     test_accuracy = accuracy_score(y_test, y_test_pred)
 
     print(f"C = {C}: Точность на обучающей выборке = {train_accuracy}, Точность на тестовой выборке = {test_accuracy}")
+    print(f"Количество опорных векторов: {clf_linear.support_vectors_.shape[0]}")
 
     if test_accuracy > best_test_accuracy:
         best_test_accuracy = test_accuracy

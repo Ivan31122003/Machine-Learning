@@ -38,11 +38,15 @@ precision = []
 
 metrics = ['euclidean', 'manhattan', 'chebyshev', 'cosine', 'minkowski']
 
+pre = []
 # Исследование влияния метрики расстояния на точность
 for metric in metrics:
     print(f"\nИсследование метрики: {metric}")
     neighbors = []
     precision = []
+
+    num_neigh = 0
+    pre_in = 0
 
     for i in range(1, 20):
         knn = KNeighborsClassifier(n_neighbors=i, metric=metric)
@@ -51,12 +55,18 @@ for metric in metrics:
         y_pred = knn.predict(X_test)
 
         accuracy = accuracy_score(y_test, y_pred)
+
         print(f'Точность модели (k={i}): {accuracy * 100:.2f}%')
         neighbors.append(i)
         precision.append(accuracy)
+        if pre_in < accuracy:
+            pre_in = accuracy
+            num_neigh = i
 
+    pre.append([metric, num_neigh, pre_in])
     create_plot(neighbors, precision, f'Зависимость точности от кол-ва соседей (метрика: {metric})', 'Кол-во соседей', 'Точность')
 
+print(pre)
 create_plot(neighbors, precision, 'Зависимость точности классификации от кол-ва ближайших соседей', 'Кол-во соседей', 'Вероятность ошибки')
 
 knn1 = KNeighborsClassifier(n_neighbors=3)

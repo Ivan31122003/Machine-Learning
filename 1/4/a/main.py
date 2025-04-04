@@ -1,10 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import seaborn as sns
 from sklearn.svm import SVC
 from sklearn.metrics import confusion_matrix
 from sklearn.preprocessing import LabelEncoder
 
-# Функция для загрузки данных
 def load_data(filename):
     data = []
     labels = []
@@ -17,9 +17,8 @@ def load_data(filename):
             labels.append(label)
     return np.array(data, dtype='float'), np.array(labels)
 
-# Функция для визуализации разделяющей поверхности
 def plot_decision_boundary(X, y, model, title):
-    h = .02  # Шаг сетки
+    h = .02
     x_min, x_max = X[:, 0].min() - 0.1, X[:, 0].max() + 0.1
     y_min, y_max = X[:, 1].min() - 0.1, X[:, 1].max() + 0.1
     xx, yy = np.meshgrid(np.arange(x_min, x_max, h),
@@ -31,6 +30,17 @@ def plot_decision_boundary(X, y, model, title):
     plt.title(title)
     plt.xlabel('X1')
     plt.ylabel('X2')
+    plt.show()
+
+def plot_confusion_matrix(y_true, y_pred, title):
+    cm = confusion_matrix(y_true, y_pred)
+    plt.figure(figsize=(6, 6))
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
+                xticklabels=label_encoder.classes_,
+                yticklabels=label_encoder.classes_)
+    plt.title(title)
+    plt.xlabel('Предсказанные метки')
+    plt.ylabel('Истинные метки')
     plt.show()
 
 # Загрузка данных
@@ -52,10 +62,9 @@ plot_decision_boundary(X_train, y_train, clf_linear, 'SVM с линейным я
 # Количество опорных векторов
 print(f"Количество опорных векторов: {clf_linear.support_vectors_.shape[0]}")
 
-# Матрица ошибок на обучающей и тестовой выборках
+# Предсказания и визуализация матрицы ошибок
 y_train_pred = clf_linear.predict(X_train)
 y_test_pred = clf_linear.predict(X_test)
-print("Матрица ошибок на обучающей выборке:")
-print(confusion_matrix(y_train, y_train_pred))
-print("Матрица ошибок на тестовой выборке:")
-print(confusion_matrix(y_test, y_test_pred))
+
+plot_confusion_matrix(y_train, y_train_pred, 'Матрица ошибок (обучающая выборка)')
+plot_confusion_matrix(y_test, y_test_pred, 'Матрица ошибок (тестовая выборка)')

@@ -50,6 +50,7 @@ kernels = [
     ('poly (degree=3)', {'kernel': 'poly', 'degree': 3}),
     ('poly (degree=4)', {'kernel': 'poly', 'degree': 4}),
     ('poly (degree=5)', {'kernel': 'poly', 'degree': 5}),
+    ('poly (degree=5)', {'kernel': 'poly', 'degree': 6}),
     ('sigmoid', {'kernel': 'sigmoid'}),
     ('RBF', {'kernel': 'rbf'})
 ]

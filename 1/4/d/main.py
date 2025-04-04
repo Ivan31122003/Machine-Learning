@@ -1,9 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import seaborn as sns
 from sklearn.svm import SVC
 from sklearn.metrics import confusion_matrix, accuracy_score
 from sklearn.preprocessing import LabelEncoder
-
 
 # Функция для загрузки данных
 def load_data(filename):
@@ -17,7 +17,6 @@ def load_data(filename):
             data.append(features)
             labels.append(label)
     return np.array(data, dtype='float'), np.array(labels)
-
 
 # Функция для визуализации разделяющей поверхности
 def plot_decision_boundary(X, y, model, title):
@@ -35,6 +34,15 @@ def plot_decision_boundary(X, y, model, title):
     plt.ylabel('X2')
     plt.show()
 
+# Функция для отображения матрицы ошибок
+def plot_confusion_matrix(y_true, y_pred, title):
+    cm = confusion_matrix(y_true, y_pred)
+    plt.figure(figsize=(6, 4))
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', cbar=False)
+    plt.title(title)
+    plt.xlabel('Предсказанные метки')
+    plt.ylabel('Истинные метки')
+    plt.show()
 
 # Загрузка данных
 X_train, y_train = load_data('svmdata_d.txt')
@@ -64,7 +72,7 @@ for kernel_name, params in kernels:
     # Визуализация разделяющей поверхности
     plot_decision_boundary(X_train, y_train, clf, f'SVM с ядром: {kernel_name}')
 
-    # Оценка точности на обучающей и тестовой выборках
+    # Предсказания и оценка точности
     y_train_pred = clf.predict(X_train)
     y_test_pred = clf.predict(X_test)
     train_accuracy = accuracy_score(y_train, y_train_pred)
@@ -73,8 +81,11 @@ for kernel_name, params in kernels:
     print(f"Ядро: {kernel_name}")
     print(f"Точность на обучающей выборке: {train_accuracy:.4f}")
     print(f"Точность на тестовой выборке: {test_accuracy:.4f}")
-    print("Матрица ошибок на обучающей выборке:")
-    print(confusion_matrix(y_train, y_train_pred))
-    print("Матрица ошибок на тестовой выборке:")
-    print(confusion_matrix(y_test, y_test_pred))
+
+    # Визуализация матрицы ошибок для обучающей выборки
+    plot_confusion_matrix(y_train, y_train_pred, f'Матрица ошибок (обучение): {kernel_name}')
+
+    # Визуализация матрицы ошибок для тестовой выборки
+    plot_confusion_matrix(y_test, y_test_pred, f'Матрица ошибок (тест): {kernel_name}')
+
     print("-" * 50)
