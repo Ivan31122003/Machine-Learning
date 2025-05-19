@@ -1,101 +1,139 @@
+import pandas as pd
 import matplotlib.pyplot as plt
-import numpy as np
-from sklearn.metrics import confusion_matrix, roc_curve, auc
-from sklearn.model_selection import learning_curve
+import seaborn as sns
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
+from sklearn.impute import SimpleImputer
+from sklearn.ensemble import StackingClassifier, RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.metrics import (accuracy_score, classification_report,
+                             confusion_matrix, roc_curve, auc)
 
+# Загрузка данных
+train_data = pd.read_csv('titanic_train.csv')
+test_data = pd.read_csv('titanic_test.csv')
+
+
+# Предобработка данных
+def preprocess_data(df, is_train=True):
+    features = ['Pclass', 'Sex', 'Age', 'SibSp', 'Parch', 'Fare', 'Embarked']
+    X = df[features]
+    y = df['Survived'] if is_train else None
+
+    categorical_features = ['Sex', 'Embarked']
+    numerical_features = ['Age', 'SibSp', 'Parch', 'Fare', 'Pclass']
+
+    numerical_transformer = Pipeline(steps=[
+        ('imputer', SimpleImputer(strategy='median')),
+        ('scaler', StandardScaler())
+    ])
+
+    categorical_transformer = Pipeline(steps=[
+        ('imputer', SimpleImputer(strategy='most_frequent')),
+        ('onehot', OneHotEncoder(handle_unknown='ignore'))
+    ])
+
+    preprocessor = ColumnTransformer(
+        transformers=[
+            ('num', numerical_transformer, numerical_features),
+            ('cat', categorical_transformer, categorical_features)
+        ])
+
+    return preprocessor, X, y
+
+
+# Подготовка данных
+preprocessor, X_train, y_train = preprocess_data(train_data, is_train=True)
+_, X_test, _ = preprocess_data(test_data, is_train=False)
+
+# Создание модели стекинга
+estimators = [
+    ('rf', RandomForestClassifier(n_estimators=100, random_state=42)),
+    ('svm', SVC(kernel='linear', probability=True, random_state=42)),
+    ('knn', KNeighborsClassifier(n_neighbors=5))
+]
+
+stacking_model = StackingClassifier(
+    estimators=estimators,
+    final_estimator=LogisticRegression(),
+    cv=5,
+    stack_method='auto'
+)
+
+model = Pipeline(steps=[
+    ('preprocessor', preprocessor),
+    ('classifier', stacking_model)
+])
+
+# Обучение модели
+model.fit(X_train, y_train)
+
+# Разделим тренировочные данные для валидации
+X_train_part, X_val, y_train_part, y_val = train_test_split(
+    X_train, y_train, test_size=0.2, random_state=42
+)
+
+# Предсказания на валидационной выборке
+y_pred = model.predict(X_val)
+y_proba = model.predict_proba(X_val)[:, 1]
+
+# Вычисление точности
+accuracy = accuracy_score(y_val, y_pred)
+print(f"Accuracy: {accuracy:.4f}")
+print("\nClassification Report:")
+print(classification_report(y_val, y_pred))
+
+# Визуализация
+plt.figure(figsize=(15, 10))
 
 # 1. Confusion Matrix
-def plot_confusion_matrix(y_true, y_pred):
-    cm = confusion_matrix(y_true, y_pred)
-    plt.figure(figsize=(6, 6))
-    plt.imshow(cm, interpolation='nearest', cmap=plt.cm.Blues)
-    plt.title('Confusion Matrix')
-    plt.colorbar()
-    plt.xticks([0, 1], ['Not Survived', 'Survived'])
-    plt.yticks([0, 1], ['Not Survived', 'Survived'])
-
-    for i in range(2):
-        for j in range(2):
-            plt.text(j, i, cm[i, j], ha='center', va='center', color='white' if cm[i, j] > cm.max() / 2 else 'black')
-
-    plt.xlabel('Predicted')
-    plt.ylabel('Actual')
-    plt.tight_layout()
-    plt.show()
-
+plt.subplot(2, 2, 1)
+cm = confusion_matrix(y_val, y_pred)
+sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
+            xticklabels=['Не выживут', 'Выживут'],
+            yticklabels=['Не выживут', 'Выживут'])
+plt.title(f'Матрица ошибок\nТочность: {accuracy:.4f}')
+plt.ylabel('True')
+plt.xlabel('Predict')
 
 # 2. ROC Curve
-def plot_roc_curve(y_true, y_pred_prob):
-    fpr, tpr, _ = roc_curve(y_true, y_pred_prob[:, 1])
-    roc_auc = auc(fpr, tpr)
+plt.subplot(2, 2, 2)
+fpr, tpr, _ = roc_curve(y_val, y_proba)
+roc_auc = auc(fpr, tpr)
+plt.plot(fpr, tpr, color='darkorange', lw=2,
+         label=f'ROC curve (AUC = {roc_auc:.2f})')
+plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+plt.xlim([0.0, 1.0])
+plt.ylim([0.0, 1.05])
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('ROC')
+plt.legend(loc="lower right")
 
-    plt.figure(figsize=(8, 6))
-    plt.plot(fpr, tpr, color='darkorange', lw=2, label=f'ROC curve (area = {roc_auc:.2f})')
-    plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
-    plt.xlim([0.0, 1.0])
-    plt.ylim([0.0, 1.05])
-    plt.xlabel('False Positive Rate')
-    plt.ylabel('True Positive Rate')
-    plt.title('Receiver Operating Characteristic')
-    plt.legend(loc='lower right')
-    plt.show()
+# 3. Feature Importance
+plt.subplot(2, 2, 3)
+try:
+    feature_importances = model.named_steps['classifier'].final_estimator_.coef_[0]
+    features = ['RandomForest', 'SVM', 'k-NN']
+    plt.barh(features, feature_importances)
+    plt.xlabel('Importance')
+    plt.title('Meta-classifier Feature Weights')
+except Exception as e:
+    plt.text(0.5, 0.5, 'Feature weights not available', ha='center')
+    plt.title('Feature Weights Not Available')
 
+# Предсказание на тестовых данных
+predictions = model.predict(X_test)
+result = pd.DataFrame({
+    'PassengerId': test_data['PassengerId'],
+    'Survived': predictions
+})
+result.to_csv('titanic_predictions.csv', index=False)
+print("\nPredictions saved to titanic_predictions.csv")
 
-# 3. Feature Importance (для мета-классификатора)
-def plot_feature_importance(model):
-    try:
-        # Получаем важность признаков из мета-классификатора
-        if hasattr(model.named_steps['classifier'].final_estimator_, 'coef_'):
-            importance = model.named_steps['classifier'].final_estimator_.coef_[0]
-        else:
-            importance = model.named_steps['classifier'].final_estimator_.feature_importances_
-
-        features = ['RandomForest', 'SVM', 'k-NN']  # Названия базовых моделей
-        plt.figure(figsize=(8, 4))
-        plt.barh(features, importance)
-        plt.xlabel('Importance')
-        plt.title('Meta-classifier Feature Importance (Base Models Weights)')
-        plt.tight_layout()
-        plt.show()
-    except Exception as e:
-        print(f"Could not plot feature importance: {e}")
-
-
-# 4. Learning Curve
-def plot_learning_curve(model, X, y):
-    train_sizes, train_scores, test_scores = learning_curve(
-        model, X, y, cv=5, n_jobs=-1,
-        train_sizes=np.linspace(0.1, 1.0, 5),
-        scoring='accuracy'
-    )
-
-    plt.figure(figsize=(8, 6))
-    plt.plot(train_sizes, np.mean(train_scores, axis=1), 'o-', color='r', label='Training score')
-    plt.plot(train_sizes, np.mean(test_scores, axis=1), 'o-', color='g', label='Cross-validation score')
-    plt.xlabel('Training examples')
-    plt.ylabel('Accuracy')
-    plt.title('Learning Curve')
-    plt.legend()
-    plt.grid()
-    plt.show()
-
-
-# Вызов функций для построения графиков
-if 'Survived' in test_data.columns:
-    y_test = test_data['Survived']
-    y_pred = model.predict(X_test)
-    y_pred_prob = model.predict_proba(X_test)
-
-    # 1. Confusion Matrix
-    plot_confusion_matrix(y_test, y_pred)
-
-    # 2. ROC Curve
-    plot_roc_curve(y_test, y_pred_prob)
-
-    # 3. Feature Importance
-    plot_feature_importance(model)
-
-    # 4. Learning Curve (на тренировочных данных)
-    plot_learning_curve(model, X_train, y_train)
-else:
-    print("Test labels not available - cannot generate evaluation plots")
+plt.tight_layout()
+plt.show()
